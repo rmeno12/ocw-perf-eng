@@ -48,23 +48,23 @@ int main(int argc, char** argv) {
   matrix* B;
   matrix* C;
 
-  const int kMatrixSize = 4;
+  const int kMatrixSize = 1000;
 
   // Parse command line arguments
   while ((optchar = getopt(argc, argv, "upz")) != -1) {
     switch (optchar) {
-    case 'u':
-      show_usec = 1;
-      break;
-    case 'p':
-      should_print = 1;
-      break;
-    case 'z':
-      use_zero_matrix = 1;
-      break;
-    default:
-      printf("Ignoring unrecognized option: %c\n", optchar);
-      continue;
+      case 'u':
+        show_usec = 1;
+        break;
+      case 'p':
+        should_print = 1;
+        break;
+      case 'z':
+        use_zero_matrix = 1;
+        break;
+      default:
+        printf("Ignoring unrecognized option: %c\n", optchar);
+        continue;
     }
   }
 
@@ -82,8 +82,7 @@ int main(int argc, char** argv) {
       total += temp[i][j];
     }
   }
-  if (!total)
-    printf("Trick to stop mallocs from being optimized out.");
+  if (!total) printf("Trick to stop mallocs from being optimized out.");
   for (int i = 0; i < 20; i++) {
     free(temp[i]);
   }
