@@ -1,0 +1,7 @@
+.buildmode
+everybit
+*.o
+*.gcov
+*.gcno
+*.gcda
+compile_commands.json
