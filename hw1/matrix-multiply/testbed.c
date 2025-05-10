@@ -20,7 +20,6 @@
  * IN THE SOFTWARE.
  **/
 
-
 /**
  * testbed.c:
  *
@@ -28,14 +27,13 @@
  **/
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "./fasttime.h"
 #include "./matrix_multiply.h"
-
 
 int main(int argc, char** argv) {
   int optchar = 0;
@@ -52,22 +50,21 @@ int main(int argc, char** argv) {
 
   const int kMatrixSize = 4;
 
-
   // Parse command line arguments
   while ((optchar = getopt(argc, argv, "upz")) != -1) {
     switch (optchar) {
-      case 'u':
-        show_usec = 1;
-        break;
-      case 'p':
-        should_print = 1;
-        break;
-      case 'z':
-        use_zero_matrix = 1;
-        break;
-      default:
-        printf("Ignoring unrecognized option: %c\n", optchar);
-        continue;
+    case 'u':
+      show_usec = 1;
+      break;
+    case 'p':
+      should_print = 1;
+      break;
+    case 'z':
+      use_zero_matrix = 1;
+      break;
+    default:
+      printf("Ignoring unrecognized option: %c\n", optchar);
+      continue;
     }
   }
 
@@ -85,14 +82,15 @@ int main(int argc, char** argv) {
       total += temp[i][j];
     }
   }
-  if (!total) printf("Trick to stop mallocs from being optimized out.");
+  if (!total)
+    printf("Trick to stop mallocs from being optimized out.");
   for (int i = 0; i < 20; i++) {
     free(temp[i]);
   }
 
   fprintf(stderr, "Setup\n");
 
-  A = make_matrix(kMatrixSize, kMatrixSize+1);
+  A = make_matrix(kMatrixSize, kMatrixSize);
   B = make_matrix(kMatrixSize, kMatrixSize);
   C = make_matrix(kMatrixSize, kMatrixSize);
 
@@ -134,6 +132,9 @@ int main(int argc, char** argv) {
   matrix_multiply_run(A, B, C);
   fasttime_t time2 = gettime();
 
+  free_matrix(A);
+  free_matrix(B);
+
   if (should_print) {
     printf("---- RESULTS ----\n");
     printf("Result: \n");
@@ -141,10 +142,11 @@ int main(int argc, char** argv) {
     printf("---- END RESULTS ----\n");
   }
 
+  free_matrix(C);
+
   if (show_usec) {
     double elapsed = tdiff(time1, time2);
-    printf("Elapsed execution time: %f usec\n",
-           elapsed * (1000.0 * 1000.0));
+    printf("Elapsed execution time: %f usec\n", elapsed * (1000.0 * 1000.0));
   } else {
     double elapsed = tdiff(time1, time2);
     printf("Elapsed execution time: %f sec\n", elapsed);
