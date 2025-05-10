@@ -4,3 +4,8 @@ sort
 *.gcda
 *.gcno
 default.profraw
+.cache/
+cachegrind.out.*
+perf.data
+perf.data.old
+compile_commands.json
