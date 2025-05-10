@@ -1,0 +1,6 @@
+sort
+*.std*
+*.gcov
+*.gcda
+*.gcno
+default.profraw

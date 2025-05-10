@@ -1,0 +1,9 @@
+isort
+sum
+*.o
+*.gcda
+*.gcno
+*.gcov
+perf.data
+*/perf.data
+cachegrind.out.*
