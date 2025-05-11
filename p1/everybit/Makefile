@@ -56,7 +56,7 @@ PRODUCT = everybit
 
 # What we're building with
 CC = clang
-CFLAGS = -std=c99 -Wall -m64 -g
+CFLAGS = -std=c99 -Wall -m64 -g -march=native
 LDFLAGS = -flto -fuse-ld=gold 
 
 # We need to link against the timing library for whatever OS we're on.
