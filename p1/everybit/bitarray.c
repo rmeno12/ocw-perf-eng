@@ -186,6 +186,10 @@ void bitarray_rotate(bitarray_t* const bitarray, const size_t bit_offset,
     return;
   }
 
+  if (bit_right_amount == 0) {
+      return;
+  }
+
   // Convert a rotate left or right to a left rotate only, and eliminate
   // multiple full rotations.
   bitarray_rotate_left(bitarray, bit_offset, bit_length,
