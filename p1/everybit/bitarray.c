@@ -273,8 +273,9 @@ static inline void store64(bitarray_t* const bitarray, const size_t bit_offset,
   memcpy(bitarray->buf + byte_offset + 8, &w1, 8);
 }
 
-static void bitarray_reverse(bitarray_t* const bitarray,
-                             const size_t bit_offset, const size_t bit_length) {
+static inline void bitarray_reverse(bitarray_t* const bitarray,
+                                    const size_t bit_offset,
+                                    const size_t bit_length) {
   size_t i = bit_offset;
   size_t j = bit_offset + bit_length - 1;
 
