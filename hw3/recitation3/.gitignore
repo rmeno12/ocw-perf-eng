@@ -1,0 +1,6 @@
+loop
+*.o
+*.s
+.cflags
+perf.data
+*/perf.data
