@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <sys/types.h>
 
@@ -226,12 +227,17 @@ static char bitmask(const size_t bit_index) { return 1 << (bit_index % 8); }
 
 static void bitarray_reverse(bitarray_t* const bitarray,
                              const size_t bit_offset, const size_t bit_length) {
-  bool tmp;
-  for (size_t i = bit_offset; i < bit_offset + bit_length / 2; i++) {
-    // swap item at i with item at len - i
-    size_t opp_i = bit_offset + bit_length - (i - bit_offset) - 1;
-    tmp = bitarray_get(bitarray, i);
-    bitarray_set(bitarray, i, bitarray_get(bitarray, opp_i));
-    bitarray_set(bitarray, opp_i, tmp);
+  bool bit_i;
+  bool bit_j;
+  size_t i = bit_offset;
+  size_t j = bit_offset + bit_length - 1;
+  while (i < j) {
+    // swap item at i with item at j
+    bit_i = bitarray_get(bitarray, i);
+    bit_j = bitarray_get(bitarray, j);
+    bitarray_set(bitarray, i, bit_j);
+    bitarray_set(bitarray, j, bit_i);
+    i++;
+    j--;
   }
 }

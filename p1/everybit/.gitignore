@@ -6,3 +6,5 @@ everybit
 *.gcda
 compile_commands.json
 .cache/
+cachegrind.out.*
+perf.data*
