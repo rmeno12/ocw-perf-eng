@@ -244,7 +244,6 @@ load64(const char* const restrict buf, const size_t bit_offset) {
   size_t byte_offset = bit_offset >> 3;
   size_t subbyte_offset = bit_offset & 7;
   const uint64_t* const restrict buf64 = (uint64_t*)(buf + byte_offset);
-  __builtin_prefetch(buf64);
   uint64_t w0 = buf64[0];
   uint64_t w1 = buf64[1];
   return (w0 >> subbyte_offset) | (w1 << (64 - subbyte_offset));
@@ -256,7 +255,6 @@ static inline __attribute__((always_inline)) void store64(
   size_t subbyte_offset = bit_offset & 7;
 
   uint64_t* const restrict buf64 = (uint64_t*)(buf + byte_offset);
-  __builtin_prefetch(buf64);
   uint64_t w0 = buf64[0];
   uint64_t w1 = buf64[1];
 
@@ -274,6 +272,12 @@ static inline void bitarray_reverse(bitarray_t* const restrict bitarray,
                                     const size_t bit_length) {
   char* const restrict buf = bitarray->buf;
   size_t max_k = bit_length / 128;
+
+  // These loops are not vectorizable because subsequent iterations can overlap
+  // on the actual bytes they affect. Because the bit arrays could be unaligned,
+  // one iteration could affect bytes [1, 9] and the next [9, 17] where the
+  // first one writes some top part of byte 9 and the second reads the other
+  // part.
 
   // first do as many full word copies as possible
   for (size_t k = 0; k < max_k; k++) {
