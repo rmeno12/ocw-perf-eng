@@ -107,9 +107,8 @@ static size_t modulo(const ssize_t n, const size_t m);
 static char bitmask(const size_t bit_index);
 
 static uint64_t reverse64(uint64_t x);
-static uint64_t load64(const bitarray_t* const bitarray,
-                       const size_t bit_offset);
-static void store64(bitarray_t* const bitarray, const size_t bit_offset,
+static uint64_t load64(const char* const restrict buf, const size_t bit_offset);
+static void store64(char* const restrict buf, const size_t bit_offset,
                     const uint64_t val);
 static void bitarray_reverse(bitarray_t* const bitarray,
                              const size_t bit_offset, const size_t bit_length);
@@ -245,62 +244,61 @@ static inline uint64_t reverse64(uint64_t x) {
   return (x >> 32) | (x << 32);
 }
 
-static inline uint64_t load64(const bitarray_t* const bitarray,
+static inline uint64_t load64(const char* restrict buf,
                               const size_t bit_offset) {
   size_t byte_offset = bit_offset >> 3;
   size_t subbyte_offset = bit_offset & 7;
+  // uint64_t w0 = *(const uint64_t*)(buf + byte_offset);
+  // uint64_t w1 = *(const uint64_t*)(buf + byte_offset + 1);
   uint64_t w0, w1;
-  memcpy(&w0, bitarray->buf + byte_offset, 8);
-  memcpy(&w1, bitarray->buf + byte_offset + 8, 8);
+  memcpy(&w0, buf + byte_offset, 8);
+  memcpy(&w1, buf + byte_offset + 8, 8);
   return (w0 >> subbyte_offset) | (w1 << (64 - subbyte_offset));
 }
 
-static inline void store64(bitarray_t* const bitarray, const size_t bit_offset,
+static inline void store64(char* restrict const buf, const size_t bit_offset,
                            const uint64_t val) {
   size_t byte_offset = bit_offset >> 3;
   size_t subbyte_offset = bit_offset & 7;
 
   uint64_t w0, w1;
-  memcpy(&w0, bitarray->buf + byte_offset, 8);
-  memcpy(&w1, bitarray->buf + byte_offset + 8, 8);
+  memcpy(&w0, buf + byte_offset, 8);
+  memcpy(&w1, buf + byte_offset + 8, 8);
 
   uint64_t m0 = (~0ULL) << subbyte_offset;
   uint64_t m1 = (~0ULL) >> (64 - subbyte_offset);
   w0 = (w0 & ~m0) | ((val << subbyte_offset) & m0);
   w1 = (w1 & ~m1) | ((val >> (64 - subbyte_offset)) & m1);
 
-  memcpy(bitarray->buf + byte_offset, &w0, 8);
-  memcpy(bitarray->buf + byte_offset + 8, &w1, 8);
+  memcpy(buf + byte_offset, &w0, 8);
+  memcpy(buf + byte_offset + 8, &w1, 8);
 }
 
-static inline void bitarray_reverse(bitarray_t* const bitarray,
+static inline void bitarray_reverse(bitarray_t* const restrict bitarray,
                                     const size_t bit_offset,
                                     const size_t bit_length) {
-  size_t i = bit_offset;
-  size_t j = bit_offset + bit_length - 1;
+  char* restrict buf = bitarray->buf;
 
   // first do as many full word copies as possible
-  uint64_t vi;
-  uint64_t vj;
-  while (i < j && j - i + 1 >= 128) {
-    vi = load64(bitarray, i);
-    vj = load64(bitarray, j);
-    store64(bitarray, i, reverse64(vj));
-    store64(bitarray, j, reverse64(vi));
-    i += 64;
-    j -= 64;
+  size_t max_k = bit_length / 128;
+  for (size_t k = 0; k < max_k; k++) {
+    size_t i = bit_offset + k * 64;
+    size_t j = bit_offset + bit_length - k * 64 - 64;
+    uint64_t vi = load64(buf, i);
+    uint64_t vj = load64(buf, j);
+    store64(buf, i, reverse64(vj));
+    store64(buf, j, reverse64(vi));
   }
 
   // then do single bit swaps to fill in the rest
   bool bit_i;
   bool bit_j;
-  while (i < j) {
-    // swap item at i with item at j
+  for (size_t k = 0; k < bit_length / 2 - max_k * 64; k++) {
+    size_t i = bit_offset + max_k * 64 + k;
+    size_t j = bit_offset + bit_length - max_k * 64 - 1 - k;
     bit_i = bitarray_get(bitarray, i);
     bit_j = bitarray_get(bitarray, j);
     bitarray_set(bitarray, i, bit_j);
     bitarray_set(bitarray, j, bit_i);
-    i++;
-    j--;
   }
 }
