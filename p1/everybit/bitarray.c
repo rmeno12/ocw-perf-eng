@@ -44,7 +44,7 @@ struct bitarray {
 
   // The underlying memory buffer that stores the bits in
   // packed form (8 per byte).
-  char* buf;
+  char* restrict buf;
 };
 
 // ******************** Prototypes for static functions *********************
@@ -244,43 +244,43 @@ static inline uint64_t reverse64(uint64_t x) {
   return (x >> 32) | (x << 32);
 }
 
-static inline uint64_t load64(const char* restrict buf,
-                              const size_t bit_offset) {
+static inline __attribute__((always_inline)) uint64_t
+load64(const char* const restrict buf, const size_t bit_offset) {
   size_t byte_offset = bit_offset >> 3;
   size_t subbyte_offset = bit_offset & 7;
-  // uint64_t w0 = *(const uint64_t*)(buf + byte_offset);
-  // uint64_t w1 = *(const uint64_t*)(buf + byte_offset + 1);
-  uint64_t w0, w1;
-  memcpy(&w0, buf + byte_offset, 8);
-  memcpy(&w1, buf + byte_offset + 8, 8);
+  const uint64_t* const restrict buf64 = (uint64_t*)(buf + byte_offset);
+  __builtin_prefetch(buf64);
+  uint64_t w0 = buf64[0];
+  uint64_t w1 = buf64[1];
   return (w0 >> subbyte_offset) | (w1 << (64 - subbyte_offset));
 }
 
-static inline void store64(char* restrict const buf, const size_t bit_offset,
-                           const uint64_t val) {
+static inline __attribute__((always_inline)) void store64(
+    char* restrict const buf, const size_t bit_offset, const uint64_t val) {
   size_t byte_offset = bit_offset >> 3;
   size_t subbyte_offset = bit_offset & 7;
 
-  uint64_t w0, w1;
-  memcpy(&w0, buf + byte_offset, 8);
-  memcpy(&w1, buf + byte_offset + 8, 8);
+  uint64_t* const restrict buf64 = (uint64_t*)(buf + byte_offset);
+  __builtin_prefetch(buf64);
+  uint64_t w0 = buf64[0];
+  uint64_t w1 = buf64[1];
 
   uint64_t m0 = (~0ULL) << subbyte_offset;
   uint64_t m1 = (~0ULL) >> (64 - subbyte_offset);
   w0 = (w0 & ~m0) | ((val << subbyte_offset) & m0);
   w1 = (w1 & ~m1) | ((val >> (64 - subbyte_offset)) & m1);
 
-  memcpy(buf + byte_offset, &w0, 8);
-  memcpy(buf + byte_offset + 8, &w1, 8);
+  buf64[0] = w0;
+  buf64[1] = w1;
 }
 
 static inline void bitarray_reverse(bitarray_t* const restrict bitarray,
                                     const size_t bit_offset,
                                     const size_t bit_length) {
-  char* restrict buf = bitarray->buf;
+  char* const restrict buf = bitarray->buf;
+  size_t max_k = bit_length / 128;
 
   // first do as many full word copies as possible
-  size_t max_k = bit_length / 128;
   for (size_t k = 0; k < max_k; k++) {
     size_t i = bit_offset + k * 64;
     size_t j = bit_offset + bit_length - k * 64 - 64;
