@@ -235,13 +235,8 @@ static size_t modulo(const ssize_t n, const size_t m) {
 
 static char bitmask(const size_t bit_index) { return 1 << (bit_index % 8); }
 
-static inline uint64_t reverse64(uint64_t x) {
-  x = ((x >> 1) & 0x5555555555555555ULL) | (x & 0x5555555555555555ULL) << 1;
-  x = ((x >> 2) & 0x3333333333333333ULL) | (x & 0x3333333333333333ULL) << 2;
-  x = ((x >> 4) & 0x0F0F0F0F0F0F0F0FULL) | (x & 0x0F0F0F0F0F0F0F0FULL) << 4;
-  x = ((x >> 8) & 0x00FF00FF00FF00FFULL) | (x & 0x00FF00FF00FF00FFULL) << 8;
-  x = ((x >> 16) & 0x0000FFFF0000FFFFULL) | (x & 0x0000FFFF0000FFFFULL) << 16;
-  return (x >> 32) | (x << 32);
+static inline __attribute__((always_inline)) uint64_t reverse64(uint64_t x) {
+  return __builtin_bitreverse64(x);
 }
 
 static inline __attribute__((always_inline)) uint64_t
