@@ -53,7 +53,7 @@ PRODUCT = screensaver
 PROFILE_PRODUCT = $(PRODUCT:%=%.prof) #the product, instrumented for gprof
 
 # What we're building with
-CXX = clang
+CXX = ../opencilk/bin/clang
 CXXFLAGS = -std=gnu99 -Wall -fopencilk
 LDFLAGS = -lrt -lm #-lcilkrts
 
