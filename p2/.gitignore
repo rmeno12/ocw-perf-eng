@@ -2,3 +2,5 @@ screensaver
 screensaver.prof
 *.o
 *.out
+.cache/
+compile_commands.json

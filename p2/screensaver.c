@@ -20,16 +20,15 @@
  * SOFTWARE.
  **/
 
+#include <cilk/cilk.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <cilk/cilk.h>
 
-
+#include "./cilktool.h"
 #include "./fasttime.h"
 #include "./line.h"
 #include "./line_demo.h"
-#include "./cilktool.h"
 
 // The PROFILE_BUILD preprocessor define is used to indicate we are building for
 // profiling, so don't include any graphics or Cilk functions.
@@ -40,7 +39,7 @@ static char* DEFAULT_INPUT_FILE_PATH = "input/mit.in";
 static char* input_file_path;
 
 // For non-graphic version
-void lineMain(LineDemo *lineDemo) {
+void lineMain(LineDemo* lineDemo) {
   // Loop for updating line movement simulation
   while (true) {
     if (!LineDemo_update(lineDemo)) {
@@ -49,7 +48,7 @@ void lineMain(LineDemo *lineDemo) {
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   int optchar;
 #ifndef PROFILE_BUILD
   bool graphicDemoFlag = false;
@@ -95,7 +94,7 @@ int main(int argc, char *argv[]) {
   printf("Input file path is: %s\n", input_file_path);
 
   // Create and initialize the Line simulation environment.
-  LineDemo *lineDemo = LineDemo_new();
+  LineDemo* lineDemo = LineDemo_new();
   LineDemo_setInputFile(input_file_path);
   LineDemo_initLine(lineDemo);
   LineDemo_setNumFrames(lineDemo, numFrames);
@@ -117,8 +116,7 @@ int main(int argc, char *argv[]) {
 
   // Output results.
   printf("---- RESULTS ----\n");
-  printf("Elapsed execution time: %fs\n",
-         tdiff(start_time, end_time));
+  printf("Elapsed execution time: %fs\n", tdiff(start_time, end_time));
   printf("%u Line-Wall Collisions\n",
          LineDemo_getNumLineWallCollisions(lineDemo));
   printf("%u Line-Line Collisions\n",
