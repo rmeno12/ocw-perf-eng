@@ -16,7 +16,7 @@ static inline bool AABB_contains_point(const AABB* const aabb, const Vec v) {
 }
 
 bool AABB_contains(const AABB* const aabb, const LinePg* const pg) {
-  Line now = pg->now;
+  Line now = *pg->now;
   bool nowin1 = AABB_contains_point(aabb, now.p1);
   bool nowin2 = AABB_contains_point(aabb, now.p2);
 
@@ -26,6 +26,19 @@ bool AABB_contains(const AABB* const aabb, const LinePg* const pg) {
 
   // TODO: see if this not short circuiting is good or bad
   return nowin1 && nowin2 && nextin1 && nextin2;
+}
+
+const LinePgListNode* LinePgListNode_contains(const LinePgListNode* const list,
+                                              const LinePg* const pg) {
+  if (list == NULL) {
+    return NULL;
+  }
+
+  if (list->pg == pg) {
+    return list;
+  }
+
+  return LinePgListNode_contains(list->next, pg);
 }
 
 QuadTree* QuadTree_init(AABB boundary) {
@@ -107,4 +120,24 @@ bool QuadTree_insert(QuadTree* const qt, const LinePg* const pg) {
   // If we couldn't insert into any of the child nodes, we just store here.
   QuadTree_add(qt, pg);
   return true;
+}
+
+const QuadTree* QuadTree_query(const QuadTree* const qt,
+                               const LinePg* const pg) {
+  if (!AABB_contains(&qt->boundary, pg)) {
+    return NULL;
+  }
+
+  if (qt->nw != NULL) {
+    if (QuadTree_query(qt->nw, pg)) return qt->nw;
+    if (QuadTree_query(qt->ne, pg)) return qt->ne;
+    if (QuadTree_query(qt->sw, pg)) return qt->sw;
+    if (QuadTree_query(qt->se, pg)) return qt->se;
+  } else if (qt->contained_sz > 0 &&
+             LinePgListNode_contains(qt->contained, pg) != NULL) {
+    assert(qt->contained != NULL);
+    return qt;
+  }
+
+  return NULL;
 }

@@ -6,12 +6,17 @@
 #include "line.h"
 #include "vec.h"
 
-#define QT_SOFT_CAPACITY 1
+// We want a quadtree node to start putting things into its children once it has
+// 4 elements, so that we have enough data to be worth using the children. Can
+// look into tuning this value to help performance.
+#define QT_SOFT_CAPACITY 4
 
 // Parallelogram formed by line at current time and line at the next time step
 struct LinePg {
-  Line now;
+  // This LinePg owns the next line but not the now line, which belongs to the
+  // CollisionWorld.
   Line next;
+  Line* now;
 };
 typedef struct LinePg LinePg;
 
@@ -33,6 +38,9 @@ struct LinePgListNode {
 };
 typedef struct LinePgListNode LinePgListNode;
 
+const LinePgListNode* LinePgListNode_contains(const LinePgListNode* const list,
+                                              const LinePg* const pg);
+
 struct QuadTree {
   AABB boundary;
 
@@ -48,6 +56,8 @@ typedef struct QuadTree QuadTree;
 
 QuadTree* QuadTree_init(AABB boundary);
 bool QuadTree_insert(QuadTree* const qt, const LinePg* const pg);
+const QuadTree* QuadTree_query(const QuadTree* const qt,
+                               const LinePg* const pg);
 bool QuadTree_remove(QuadTree* const qt, const LinePg* const pg);
 
 #endif  // QUADTREE_H_
