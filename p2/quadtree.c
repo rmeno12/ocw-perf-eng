@@ -6,10 +6,10 @@
 #include "vec.h"
 
 static inline bool AABB_contains_point(const AABB* const aabb, const Vec v) {
-  const vec_dimension left = aabb->center.x - aabb->half_dim;
-  const vec_dimension right = aabb->center.x + aabb->half_dim;
-  const vec_dimension bottom = aabb->center.y - aabb->half_dim;
-  const vec_dimension top = aabb->center.y + aabb->half_dim;
+  const vec_dimension left = aabb->center.x - aabb->half_dim.x;
+  const vec_dimension right = aabb->center.x + aabb->half_dim.x;
+  const vec_dimension bottom = aabb->center.y - aabb->half_dim.y;
+  const vec_dimension top = aabb->center.y + aabb->half_dim.y;
 
   // TODO: see if this short circuiting is good or bad
   return v.x > left && v.x < right && v.y > bottom && v.y < top;
@@ -41,6 +41,14 @@ const LinePgListNode* LinePgListNode_contains(const LinePgListNode* const list,
   return LinePgListNode_contains(list->next, pg);
 }
 
+void LinePgListNode_free(LinePgListNode* list) {
+  if (list == NULL) return;
+
+  free(list->pg);
+  LinePgListNode_free(list->next);
+  free(list);
+}
+
 QuadTree* QuadTree_init(AABB boundary) {
   QuadTree* qt = malloc(sizeof(QuadTree));
   *qt = (QuadTree){
@@ -55,30 +63,46 @@ QuadTree* QuadTree_init(AABB boundary) {
   return qt;
 }
 
+void QuadTree_free(QuadTree* qt) {
+  if (qt == NULL) return;
+
+  LinePgListNode_free(qt->contained);
+  QuadTree_free(qt->nw);
+  QuadTree_free(qt->ne);
+  QuadTree_free(qt->sw);
+  QuadTree_free(qt->se);
+
+  free(qt);
+}
+
 static void QuadTree_subdivide(QuadTree* const qt) {
   AABB boundary = qt->boundary;
-  vec_dimension new_half = boundary.half_dim / (vec_dimension)2.0;
+  Vec new_half = Vec_multiply(boundary.half_dim, 0.5);
 
   AABB nw_boundary = {
-      .center = Vec_add(boundary.center, (Vec){.x = -new_half, .y = new_half}),
+      .center =
+          Vec_add(boundary.center, (Vec){.x = -new_half.x, .y = new_half.y}),
       .half_dim = new_half,
   };
   qt->nw = QuadTree_init(nw_boundary);
 
   AABB ne_boundary = {
-      .center = Vec_add(boundary.center, (Vec){.x = new_half, .y = new_half}),
+      .center =
+          Vec_add(boundary.center, (Vec){.x = new_half.x, .y = new_half.y}),
       .half_dim = new_half,
   };
   qt->ne = QuadTree_init(ne_boundary);
 
   AABB sw_boundary = {
-      .center = Vec_add(boundary.center, (Vec){.x = -new_half, .y = -new_half}),
+      .center =
+          Vec_add(boundary.center, (Vec){.x = -new_half.x, .y = -new_half.y}),
       .half_dim = new_half,
   };
   qt->sw = QuadTree_init(sw_boundary);
 
   AABB se_boundary = {
-      .center = Vec_add(boundary.center, (Vec){.x = new_half, .y = -new_half}),
+      .center =
+          Vec_add(boundary.center, (Vec){.x = new_half.x, .y = -new_half.y}),
       .half_dim = new_half,
   };
   qt->se = QuadTree_init(se_boundary);
@@ -122,6 +146,8 @@ bool QuadTree_insert(QuadTree* const qt, const LinePg* const pg) {
   return true;
 }
 
+// TODO: idea: instead of doing this search, add a link back from a linepg to
+// the quadtree node parent?
 const QuadTree* QuadTree_query(const QuadTree* const qt,
                                const LinePg* const pg) {
   if (!AABB_contains(&qt->boundary, pg)) {

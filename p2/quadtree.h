@@ -23,7 +23,7 @@ typedef struct LinePg LinePg;
 // Axis aligned bounding box
 struct AABB {
   Vec center;
-  vec_dimension half_dim;
+  Vec half_dim;
 };
 typedef struct AABB AABB;
 
@@ -32,14 +32,15 @@ typedef struct AABB AABB;
 bool AABB_contains(const AABB* const aabb, const LinePg* const pg);
 
 struct LinePgListNode {
-  // The list doesn't own the pg
-  const LinePg* pg;
+  // The list owns the pg
+  LinePg* pg;
   struct LinePgListNode* next;
 };
 typedef struct LinePgListNode LinePgListNode;
 
 const LinePgListNode* LinePgListNode_contains(const LinePgListNode* const list,
                                               const LinePg* const pg);
+void LinePgListNode_free(LinePgListNode* list);
 
 struct QuadTree {
   AABB boundary;
@@ -55,6 +56,7 @@ struct QuadTree {
 typedef struct QuadTree QuadTree;
 
 QuadTree* QuadTree_init(AABB boundary);
+void QuadTree_free(QuadTree* qt);
 bool QuadTree_insert(QuadTree* const qt, const LinePg* const pg);
 const QuadTree* QuadTree_query(const QuadTree* const qt,
                                const LinePg* const pg);
