@@ -42,10 +42,21 @@ const LinePgListNode* LinePgListNode_contains(const LinePgListNode* const list,
                                               const LinePg* const pg);
 void LinePgListNode_free(LinePgListNode* list);
 
+struct LinePgList {
+  LinePgListNode* head;
+  LinePgListNode* tail;
+};
+typedef struct LinePgList LinePgList;
+
+void LinePgList_append(LinePgList* list, LinePg* pg);
+void LinePgList_droplast(LinePgList* list, size_t n);
+bool LinePgList_contains(const LinePgList* const list, const LinePg* const pg);
+void LinePgList_free(LinePgList* list);
+
 struct QuadTree {
   AABB boundary;
 
-  LinePgListNode* contained;
+  LinePgList contained;
   size_t contained_sz;
 
   struct QuadTree* nw;
@@ -57,6 +68,7 @@ typedef struct QuadTree QuadTree;
 
 QuadTree* QuadTree_init(AABB boundary);
 void QuadTree_free(QuadTree* qt);
+bool QuadTree_isleaf(const QuadTree* const qt);
 bool QuadTree_insert(QuadTree* const qt, const LinePg* const pg);
 const QuadTree* QuadTree_query(const QuadTree* const qt,
                                const LinePg* const pg);

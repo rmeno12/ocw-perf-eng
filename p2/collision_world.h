@@ -70,6 +70,7 @@ void CollisionWorld_lineWallCollision(CollisionWorld* collisionWorld);
 
 // Detect line-line intersection.
 void CollisionWorld_detectIntersection(CollisionWorld* collisionWorld);
+void CollisionWorld_detectIntersection2(CollisionWorld* collisionWorld);
 
 // Get total number of line-wall collisions.
 unsigned int CollisionWorld_getNumLineWallCollisions(

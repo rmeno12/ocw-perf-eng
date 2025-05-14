@@ -76,7 +76,7 @@ Line* CollisionWorld_getLine(CollisionWorld* collisionWorld,
 }
 
 void CollisionWorld_updateLines(CollisionWorld* collisionWorld) {
-  CollisionWorld_detectIntersection(collisionWorld);
+  CollisionWorld_detectIntersection2(collisionWorld);
   CollisionWorld_updatePosition(collisionWorld);
   CollisionWorld_lineWallCollision(collisionWorld);
 }
@@ -126,6 +126,57 @@ void CollisionWorld_lineWallCollision(CollisionWorld* collisionWorld) {
   }
 }
 
+void IEL_QT_compute(IntersectionEventList iel, QuadTree* qt, LinePgList* pgl,
+                    CollisionWorld* collisionWorld) {
+  // Check all contained pgs against accumulated pgs
+  if (pgl->head != NULL && qt->contained_sz > 0) {
+    // TODO:
+    LinePgListNode* cont_nd = qt->contained.head;
+    while (cont_nd != NULL) {
+      LinePgListNode* acc_nd = pgl->head;
+      while (acc_nd != NULL) {
+        Line* l1 = cont_nd->pg->now;
+        Line* l2 = acc_nd->pg->now;
+        if (compareLines(l1, l2) >= 0) {
+          Line* temp = l1;
+          l1 = l2;
+          l2 = temp;
+        }
+
+        IntersectionType intersectionType =
+            intersect(l1, l2, collisionWorld->timeStep);
+        if (intersectionType != NO_INTERSECTION) {
+          IntersectionEventList_appendNode(&iel, l1, l2, intersectionType);
+          collisionWorld->numLineLineCollisions++;
+        }
+        acc_nd = acc_nd->next;
+      }
+      cont_nd = cont_nd->next;
+    }
+  }
+
+  if (!QuadTree_isleaf(qt)) {
+    // add contained pgs to accumulator
+    if (qt->contained_sz > 0) {
+      LinePgListNode* nd = qt->contained.head;
+      while (nd != NULL) {
+        LinePg* newpg = malloc(sizeof(LinePg));
+        *newpg = *nd->pg;
+        LinePgList_append(pgl, newpg);
+        nd = nd->next;
+      }
+    }
+
+    // Recur into children
+    IEL_QT_compute(iel, qt->nw, pgl, collisionWorld);
+    IEL_QT_compute(iel, qt->ne, pgl, collisionWorld);
+    IEL_QT_compute(iel, qt->sw, pgl, collisionWorld);
+    IEL_QT_compute(iel, qt->se, pgl, collisionWorld);
+
+    LinePgList_droplast(pgl, qt->contained_sz);
+  }
+}
+
 void CollisionWorld_detectIntersection2(CollisionWorld* collisionWorld) {
   IntersectionEventList intersectionEventList = IntersectionEventList_make();
 
@@ -155,9 +206,42 @@ void CollisionWorld_detectIntersection2(CollisionWorld* collisionWorld) {
 
   // Iterate through the quadtree and at each node, if that node has contained
   // pgs, check those pgs against each other and all the ones in child nodes.
+  // Actually, iterate through the quadtree accumulating pgs down to the leaves
+  // and only check the accumulated ones.
   // TODO:
+  // LinePgList* pgl = malloc(sizeof(LinePgList));
+  // pgl->head = NULL;
+  // pgl->tail = NULL;
+  // IEL_QT_compute(intersectionEventList, qt, pgl, collisionWorld);
+  // LinePgList_free(pgl);
 
   QuadTree_free(qt);
+
+  // Test all line-line pairs to see if they will intersect before the
+  // next time step.
+  for (int i = 0; i < collisionWorld->numOfLines; i++) {
+    Line* l1 = collisionWorld->lines[i];
+
+    for (int j = i + 1; j < collisionWorld->numOfLines; j++) {
+      Line* l2 = collisionWorld->lines[j];
+
+      // intersect expects compareLines(l1, l2) < 0 to be true.
+      // Swap l1 and l2, if necessary.
+      if (compareLines(l1, l2) >= 0) {
+        Line* temp = l1;
+        l1 = l2;
+        l2 = temp;
+      }
+
+      IntersectionType intersectionType =
+          intersect(l1, l2, collisionWorld->timeStep);
+      if (intersectionType != NO_INTERSECTION) {
+        IntersectionEventList_appendNode(&intersectionEventList, l1, l2,
+                                         intersectionType);
+        collisionWorld->numLineLineCollisions++;
+      }
+    }
+  }
 
   // Sort the intersection event list.
   IntersectionEventNode* startNode = intersectionEventList.head;
