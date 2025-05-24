@@ -4,3 +4,4 @@ screensaver.prof
 *.out
 .cache/
 compile_commands.json
+test

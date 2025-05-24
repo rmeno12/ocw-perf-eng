@@ -45,10 +45,13 @@
 
 # The sources we're building
 HEADERS = $(wildcard *.h)
-PRODUCT_SOURCES = $(filter-out graphic_stuff.c, $(wildcard *.c))
+PRODUCT_SOURCES = $(filter-out graphic_stuff.c test.c, $(wildcard *.c))
+TEST_SOURCES = $(filter-out graphic_stuff.c screensaver.c, $(wildcard *.c))
+TEST_SOURCES += extern/unity/unity.c
 
 # What we're building
 PRODUCT_OBJECTS = $(PRODUCT_SOURCES:.c=.o)
+TEST_OBJECTS = $(TEST_SOURCES:.c=.o)
 PRODUCT = screensaver
 PROFILE_PRODUCT = $(PRODUCT:%=%.prof) #the product, instrumented for gprof
 
@@ -72,7 +75,7 @@ endif
 
 
 # By default, make the product.
-all:		$(PRODUCT)
+all:		$(PRODUCT) test
 
 # How to build for profiling
 prof:		$(PROFILE_PRODUCT)
@@ -100,3 +103,7 @@ $(PROFILE_PRODUCT): CXXFLAGS += -DPROFILE_BUILD -pg
 $(PROFILE_PRODUCT): LDFLAGS += -pg
 $(PROFILE_PRODUCT): $(PRODUCT_OBJECTS)
 	$(CXX)  $(PRODUCT_OBJECTS) $(LDFLAGS) $(EXTRA_LDFLAGS) -o $(PROFILE_PRODUCT)
+
+test: CXXFLAGS += -Iextern/unity
+test: $(TEST_OBJECTS) test.o
+	$(CXX) $(LDFLAGS) $(EXTRA_LDFLAGS) $(CXXFLAGS) $(EXTRA_CXXFLAGS) -o $@ $^
