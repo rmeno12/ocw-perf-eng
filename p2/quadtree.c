@@ -168,7 +168,9 @@ const QuadTree* QuadTree_query(const QuadTree* const qt,
     if (QuadTree_query(qt->ne, pg)) return qt->ne;
     if (QuadTree_query(qt->sw, pg)) return qt->sw;
     if (QuadTree_query(qt->se, pg)) return qt->se;
-  } else if (qt->contained_sz > 0 && LinePgList_contains(&qt->contained, pg)) {
+  }
+
+  if (qt->contained_sz > 0 && LinePgList_contains(&qt->contained, pg)) {
     assert(QuadTree_haslocal(qt));
     return qt;
   }

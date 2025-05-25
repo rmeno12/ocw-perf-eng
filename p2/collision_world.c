@@ -130,10 +130,35 @@ void IEL_QT_compute(IntersectionEventList iel, QuadTree* qt, LinePgList* pgl,
                     CollisionWorld* collisionWorld) {
   // Check all contained pgs against accumulated pgs
   if (pgl->head != NULL && qt->contained_sz > 0) {
-    // TODO:
     LinePgListNode* cont_nd = qt->contained.head;
     while (cont_nd != NULL) {
       LinePgListNode* acc_nd = pgl->head;
+      while (acc_nd != NULL) {
+        Line* l1 = cont_nd->pg->now;
+        Line* l2 = acc_nd->pg->now;
+        if (compareLines(l1, l2) >= 0) {
+          Line* temp = l1;
+          l1 = l2;
+          l2 = temp;
+        }
+
+        IntersectionType intersectionType =
+            intersect(l1, l2, collisionWorld->timeStep);
+        if (intersectionType != NO_INTERSECTION) {
+          IntersectionEventList_appendNode(&iel, l1, l2, intersectionType);
+          collisionWorld->numLineLineCollisions++;
+        }
+        acc_nd = acc_nd->next;
+      }
+      cont_nd = cont_nd->next;
+    }
+  }
+
+  // Check all contained pgs against each other
+  if (qt->contained_sz > 0) {
+    LinePgListNode* cont_nd = qt->contained.head;
+    while (cont_nd != NULL) {
+      LinePgListNode* acc_nd = cont_nd->next;
       while (acc_nd != NULL) {
         Line* l1 = cont_nd->pg->now;
         Line* l2 = acc_nd->pg->now;
@@ -209,39 +234,40 @@ void CollisionWorld_detectIntersection2(CollisionWorld* collisionWorld) {
   // Actually, iterate through the quadtree accumulating pgs down to the leaves
   // and only check the accumulated ones.
   // TODO:
-  // LinePgList* pgl = malloc(sizeof(LinePgList));
-  // pgl->head = NULL;
-  // pgl->tail = NULL;
-  // IEL_QT_compute(intersectionEventList, qt, pgl, collisionWorld);
-  // LinePgList_free(pgl);
+  LinePgList* pgl = malloc(sizeof(LinePgList));
+  pgl->head = NULL;
+  pgl->tail = NULL;
+  IEL_QT_compute(intersectionEventList, qt, pgl, collisionWorld);
+  LinePgList_free(pgl);
 
   QuadTree_free(qt);
 
   // Test all line-line pairs to see if they will intersect before the
   // next time step.
-  for (int i = 0; i < collisionWorld->numOfLines; i++) {
-    Line* l1 = collisionWorld->lines[i];
-
-    for (int j = i + 1; j < collisionWorld->numOfLines; j++) {
-      Line* l2 = collisionWorld->lines[j];
-
-      // intersect expects compareLines(l1, l2) < 0 to be true.
-      // Swap l1 and l2, if necessary.
-      if (compareLines(l1, l2) >= 0) {
-        Line* temp = l1;
-        l1 = l2;
-        l2 = temp;
-      }
-
-      IntersectionType intersectionType =
-          intersect(l1, l2, collisionWorld->timeStep);
-      if (intersectionType != NO_INTERSECTION) {
-        IntersectionEventList_appendNode(&intersectionEventList, l1, l2,
-                                         intersectionType);
-        collisionWorld->numLineLineCollisions++;
-      }
-    }
-  }
+  // for (int i = 0; i < collisionWorld->numOfLines; i++) {
+  //   Line* l1 = collisionWorld->lines[i];
+  //
+  //   for (int j = i + 1; j < collisionWorld->numOfLines; j++) {
+  //     Line* l2 = collisionWorld->lines[j];
+  //
+  //     // intersect expects compareLines(l1, l2) < 0 to be true.
+  //     // Swap l1 and l2, if necessary.
+  //     if (compareLines(l1, l2) >= 0) {
+  //       Line* temp = l1;
+  //       l1 = l2;
+  //       l2 = temp;
+  //     }
+  //
+  //     IntersectionType intersectionType =
+  //         intersect(l1, l2, collisionWorld->timeStep);
+  //     if (intersectionType != NO_INTERSECTION) {
+  //       printf("intersection between %d and %d\n", i, j);
+  //       IntersectionEventList_appendNode(&intersectionEventList, l1, l2,
+  //                                        intersectionType);
+  //       collisionWorld->numLineLineCollisions++;
+  //     }
+  //   }
+  // }
 
   // Sort the intersection event list.
   IntersectionEventNode* startNode = intersectionEventList.head;
